@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ajax 실시간 채팅</title>
+  <style>
+    body { font-family: sans-serif; }
+    #log { width: 520px; height: 320px; border: 1px solid #ccc; padding: 8px; overflow-y: auto; }
+    .row { margin-top: 8px; }
+    input { padding: 6px; }
+    button { padding: 6px 10px; }
+    .msg { margin: 4px 0; }
+  </style>
+</head>
+<body>
+  <h1>Ajax 실시간 채팅</h1>
+
+  <div id="log"></div>
+
+  <div class="row">
+    <input id="user" type="text" placeholder="이름" value="Kang" />
+  </div>
+
+  <div class="row">
+    <input id="text" type="text" placeholder="메시지" style="width: 420px;" />
+    <button id="send">전송</button>
+  </div>
+
+  <script>
+    var baseUrl = "/chat";
+    var log = document.getElementById("log");
+    var userEl = document.getElementById("user");
+    var textEl = document.getElementById("text");
+    var sendBtn = document.getElementById("send");
+
+    var lastId = 0;
+
+    function appendMessage(m) {
+      var div = document.createElement("div");
+      div.className = "msg";
+      div.textContent = "[" + m.id + "] " + m.dateStr + " / " + m.user + ": " + m.text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function getJson(url, onOk) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            onOk(JSON.parse(xhr.responseText));
+          }
+        }
+      };
+      xhr.open("GET", url, true);
+      xhr.send();
+    }
+
+    function postJson(url, bodyObj, onOk, onErr) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) onOk(JSON.parse(xhr.responseText));
+          else onErr && onErr(xhr.responseText);
+        }
+      };
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.send(JSON.stringify(bodyObj));
+    }
+
+    // 1) 최초 로드: 전체 메시지 받기
+    getJson(baseUrl + "/", function (data) {
+      var list = data.messages || [];
+      for (var i = 0; i < list.length; i++) appendMessage(list[i]);
+      lastId = data.lastId || 0;
+    });
+
+    // 2) 0.5초마다 새 메시지 폴링
+    setInterval(function () {
+      getJson(baseUrl + "/poll/" + lastId, function (data) {
+        var list = data.messages || [];
+        if (list.length > 0) {
+          for (var i = 0; i < list.length; i++) appendMessage(list[i]);
+          lastId = data.lastId || lastId;
+        }
+      });
+    }, 500);
+
+    // 3) 전송
+    function sendMessage() {
+      var user = userEl.value.trim();
+      var text = textEl.value.trim();
+      if (!user || !text) return;
+
+      postJson(
+        baseUrl + "/send",
+        { user: user, text: text },
+        function () {
+          textEl.value = "";
+          textEl.focus();
+          // 폴링이 곧 받아오지만, 체감 속도를 위해 즉시 한 번 폴링
+          getJson(baseUrl + "/poll/" + lastId, function (data) {
+            var list = data.messages || [];
+            for (var i = 0; i < list.length; i++) appendMessage(list[i]);
+            lastId = data.lastId || lastId;
+          });
+        }
+      );
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    textEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>

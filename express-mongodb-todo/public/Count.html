@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>실시간 접속 카운트</title>
+    </head>
+    <body>
+        <h1>실시간 접속 카운트</h1>
+        <div id="resultBox">
+            count: 1<br/>
+            date: 2024-2-22 9:32
+        </div>
+
+        <script>
+        var url = "/count";
+        var xhr = new XMLHttpRequest();
+        var box = document.getElementById('resultBox');
+
+        // 서버의 cnt변수와 비교하는 기능.
+        var count = 0;
+        xhr.onreadystatechange = function() {
+            if(xhr.status==200 && xhr.readyState==4){
+                const resData = JSON.parse(xhr.responseText);
+                box.innerHTML =  `count: ${resData.count}<br/>
+                            date: ${resData.dateStr}`;
+                count = resData.count; // 처리 후 count 변경
+            }
+        };
+
+        xhr.open("GET",url,true);
+        xhr.send();
+
+        // 1초에 한번씩 서버에 변동사항 체크
+        var interval = setInterval(function() {
+            var receiveUrl = "/count/"+count;
+            var xhr2 = new XMLHttpRequest();
+            xhr2.onload = function() {
+                if(xhr2.responseText !== ""){
+                    const resData = JSON.parse(xhr2.responseText);
+                    box.innerHTML =  `count: ${resData.count}<br/>
+                                date: ${resData.dateStr}`;
+                    count = resData.count; // 처리 후 count 변경
+                }
+            };
+            xhr2.open("GET",receiveUrl,true);
+            xhr2.send();
+        }, 500);
+        </script>
+    </body>
+</html>
