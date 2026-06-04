@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>컴스터디 중고차 쇼핑몰</h1>
+    <a href="/car/input">정보입력</a>
+    <table border="1" width="100%">
+        <tr>
+            <th>NO</th>
+            <th>NAME</th>
+            <th>PRICE</th>
+            <th>COMPANY</th>
+            <th>YEAR</th>
+        </tr>
+    <%
+        carList.forEach((car, idx) => {
+    %>
+        <tr>
+            <td><%=idx %></td>
+            <td><a href="/car/detail?id=<%=car._id %>"><%=car.name %></a> </td>
+            <td><%=car.price %></td>
+            <td><%=car.company %></td>
+            <td><%=car['year'] %></td>
+        </tr>
+    <%
+        });
+    %>
+    </table>
+</body>
+</html>
